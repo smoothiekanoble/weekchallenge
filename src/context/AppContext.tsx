@@ -44,8 +44,8 @@ const createEmptyDayData = (date: Date): DayData => ({
 });
 
 const calculateWeather = (taskCount: number): WeatherState => {
-  if (taskCount > 10) return 'stormy';
-  if (taskCount > 5) return 'cloudy';
+  if (taskCount > 16) return 'stormy';
+  if (taskCount > 8) return 'cloudy';
   if (taskCount > 0) return 'clear';
   return 'sunny';
 };

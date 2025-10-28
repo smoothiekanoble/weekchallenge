@@ -26,7 +26,7 @@ export const LoginScreen = ({ onLogin }: LoginScreenProps) => {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-700/50 mb-4">
             <Lock className="w-8 h-8 text-accent-lavender" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Personal Alignment Week</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Lock in Week</h1>
           <p className="text-gray-400">Personal space — enter to continue</p>
         </div>
 
