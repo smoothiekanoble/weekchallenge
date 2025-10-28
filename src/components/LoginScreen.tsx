@@ -1,9 +1,24 @@
 import { useState } from 'react';
 import { Lock } from 'lucide-react';
+import { WEEK_START, WEEK_END } from '../utils/dateUtils';
 
 interface LoginScreenProps {
   onLogin: (password: string) => boolean;
 }
+
+const formatWeekRange = () => {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const startMonth = months[WEEK_START.getMonth()];
+  const endMonth = months[WEEK_END.getMonth()];
+  const startDay = WEEK_START.getDate();
+  const endDay = WEEK_END.getDate();
+  const year = WEEK_END.getFullYear();
+  
+  if (startMonth === endMonth) {
+    return `${startMonth} ${startDay}–${endDay}, ${year}`;
+  }
+  return `${startMonth} ${startDay} – ${endMonth} ${endDay}, ${year}`;
+};
 
 export const LoginScreen = ({ onLogin }: LoginScreenProps) => {
   const [password, setPassword] = useState('');
@@ -60,7 +75,7 @@ export const LoginScreen = ({ onLogin }: LoginScreenProps) => {
         </form>
 
         <p className="text-center text-sm text-gray-500 mt-6">
-          Oct 28 – Nov 3, 2024
+          {formatWeekRange()}
         </p>
       </div>
     </div>

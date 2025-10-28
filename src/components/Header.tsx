@@ -1,8 +1,23 @@
 import { LogOut } from 'lucide-react';
+import { WEEK_START, WEEK_END } from '../utils/dateUtils';
 
 interface HeaderProps {
   onLogout: () => void;
 }
+
+const formatWeekRange = () => {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const startMonth = months[WEEK_START.getMonth()];
+  const endMonth = months[WEEK_END.getMonth()];
+  const startDay = WEEK_START.getDate();
+  const endDay = WEEK_END.getDate();
+  const year = WEEK_END.getFullYear();
+  
+  if (startMonth === endMonth) {
+    return `${startMonth} ${startDay}–${endDay}, ${year}`;
+  }
+  return `${startMonth} ${startDay} – ${endMonth} ${endDay}, ${year}`;
+};
 
 export const Header = ({ onLogout }: HeaderProps) => {
   return (
@@ -10,7 +25,7 @@ export const Header = ({ onLogout }: HeaderProps) => {
       <div className="max-w-5xl mx-auto flex items-center justify-between">
         <div>
           <h1 className="text-lg font-bold text-white">Challenge Week</h1>
-          <p className="text-xs text-gray-400">Oct 28 – Nov 3, 2024</p>
+          <p className="text-xs text-gray-400">{formatWeekRange()}</p>
         </div>
         
         <button

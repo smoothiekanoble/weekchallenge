@@ -1,16 +1,29 @@
-// Week of Oct 28 - Nov 3, 2024
-export const WEEK_START = new Date(2024, 9, 28); // Month is 0-indexed (9 = October)
-export const WEEK_END = new Date(2024, 10, 3);
+// Get the current week (Monday - Sunday)
+const getCurrentWeekDates = (): Date[] => {
+  const today = new Date();
+  const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  
+  // Calculate days until Monday (start of week)
+  const daysUntilMonday = currentDay === 0 ? -6 : 1 - currentDay;
+  
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + daysUntilMonday);
+  monday.setHours(0, 0, 0, 0);
+  
+  // Generate the 7 days of the week starting from Monday
+  const weekDates: Date[] = [];
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + i);
+    weekDates.push(date);
+  }
+  
+  return weekDates;
+};
 
-export const WEEK_DATES = [
-  new Date(2024, 9, 28), // Mon Oct 28
-  new Date(2024, 9, 29), // Tue Oct 29
-  new Date(2024, 9, 30), // Wed Oct 30
-  new Date(2024, 9, 31), // Thu Oct 31
-  new Date(2024, 10, 1), // Fri Nov 1
-  new Date(2024, 10, 2), // Sat Nov 2
-  new Date(2024, 10, 3), // Sun Nov 3
-];
+export const WEEK_DATES = getCurrentWeekDates();
+export const WEEK_START = WEEK_DATES[0]; // Monday
+export const WEEK_END = WEEK_DATES[6]; // Sunday
 
 export const formatDate = (date: Date): string => {
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
