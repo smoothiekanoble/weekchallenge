@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
-import { WEEK_DATES, formatDateShort } from '../utils/dateUtils';
+import { WEEK_DATES, formatDateShort, getDateKey } from '../utils/dateUtils';
 
 export const WeeklySummary = () => {
   const { weekData } = useAppContext();
@@ -19,25 +19,26 @@ export const WeeklySummary = () => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6"
+      className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700 p-4"
     >
-      <h2 className="text-2xl font-bold text-white mb-6">Weekly Summary</h2>
+      <h2 className="text-lg font-bold text-white mb-3">Weekly Summary</h2>
 
       {/* Score Visualization */}
-      <div className="mb-8">
-        <div className="flex items-end justify-between gap-2 h-32 mb-2">
+      <div className="mb-4">
+        <div className="flex items-end justify-between gap-1.5 h-24 mb-2">
           {WEEK_DATES.map((date) => {
-            const dateKey = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+            const dateKey = getDateKey(date);
             const dayData = weekData.get(dateKey);
             const score = dayData?.score || 0;
             const height = (score / 10) * 100;
 
             return (
-              <div key={dateKey} className="flex-1 flex flex-col items-center">
+              <div key={dateKey} className="flex-1 flex flex-col items-center justify-end h-full">
                 <motion.div
+                  key={`bar-${dateKey}-${score}`}
                   initial={{ height: 0 }}
                   animate={{ height: `${height}%` }}
-                  transition={{ duration: 0.5, delay: WEEK_DATES.indexOf(date) * 0.1 }}
+                  transition={{ duration: 0.5 }}
                   className="w-full bg-gradient-to-t from-accent-amber to-accent-lavender rounded-t-lg min-h-[4px]"
                 />
               </div>
@@ -45,7 +46,7 @@ export const WeeklySummary = () => {
           })}
         </div>
 
-        <div className="flex justify-between text-xs text-gray-400">
+        <div className="flex justify-between text-[10px] text-gray-400">
           {WEEK_DATES.map((date) => (
             <div key={date.toISOString()} className="flex-1 text-center">
               {formatDateShort(date)}
@@ -53,41 +54,41 @@ export const WeeklySummary = () => {
           ))}
         </div>
 
-        <div className="mt-4 text-center">
-          <p className="text-sm text-gray-400">Average Score</p>
-          <p className="text-4xl font-bold text-accent-amber">{averageScore}</p>
+        <div className="mt-3 text-center">
+          <p className="text-xs text-gray-400">Average Score</p>
+          <p className="text-2xl font-bold text-accent-amber">{averageScore}</p>
         </div>
       </div>
 
       {/* Weekly Reflections */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div>
-          <label className="text-sm text-gray-400 block mb-2">Hardest part this week:</label>
+          <label className="text-xs text-gray-400 block mb-1">Hardest part this week:</label>
           <textarea
             value={weekReflection.hardest}
             onChange={(e) => setWeekReflection({ ...weekReflection, hardest: e.target.value })}
             placeholder="say it ugly, not pretty"
-            className="w-full px-4 py-3 bg-slate-900/50 text-white rounded-lg border border-slate-600 focus:outline-none focus:ring-2 focus:ring-accent-lavender placeholder-gray-600 resize-none"
-            rows={3}
+            className="w-full px-2 py-2 bg-slate-900/50 text-white text-xs rounded-lg border border-slate-600 focus:outline-none focus:ring-1 focus:ring-accent-lavender placeholder-gray-600 resize-none"
+            rows={2}
           />
         </div>
 
         <div>
-          <label className="text-sm text-gray-400 block mb-2">What actually helped:</label>
+          <label className="text-xs text-gray-400 block mb-1">What actually helped:</label>
           <textarea
             value={weekReflection.helped}
             onChange={(e) => setWeekReflection({ ...weekReflection, helped: e.target.value })}
             placeholder="even small things count"
-            className="w-full px-4 py-3 bg-slate-900/50 text-white rounded-lg border border-slate-600 focus:outline-none focus:ring-2 focus:ring-accent-lavender placeholder-gray-600 resize-none"
-            rows={3}
+            className="w-full px-2 py-2 bg-slate-900/50 text-white text-xs rounded-lg border border-slate-600 focus:outline-none focus:ring-1 focus:ring-accent-lavender placeholder-gray-600 resize-none"
+            rows={2}
           />
         </div>
 
         <div>
-          <label className="text-sm text-gray-400 block mb-2">Would I run this again?</label>
-          <div className="flex gap-4">
+          <label className="text-xs text-gray-400 block mb-1">Would I run this again?</label>
+          <div className="flex gap-2">
             {['Yes', 'No', 'Adjust'].map((option) => (
-              <label key={option} className="flex items-center gap-2 text-white cursor-pointer">
+              <label key={option} className="flex items-center gap-1.5 text-white text-xs cursor-pointer">
                 <input
                   type="radio"
                   name="runAgain"
@@ -96,7 +97,7 @@ export const WeeklySummary = () => {
                   onChange={(e) =>
                     setWeekReflection({ ...weekReflection, runAgain: e.target.value })
                   }
-                  className="w-4 h-4 accent-accent-mint"
+                  className="w-3.5 h-3.5 accent-accent-mint"
                 />
                 <span>{option}</span>
               </label>
@@ -106,9 +107,9 @@ export const WeeklySummary = () => {
       </div>
 
       {/* Encouragement Footer */}
-      <div className="mt-8 pt-6 border-t border-slate-700">
-        <p className="text-gray-300 italic text-center">
-          Seven receipts. You're not lazy — you were overloaded. Now you know where the leaks are.
+      <div className="mt-4 pt-3 border-t border-slate-700">
+        <p className="text-gray-300 italic text-center text-xs">
+          Seven receipts. Hummmmmmmmm babe...
         </p>
       </div>
     </motion.div>

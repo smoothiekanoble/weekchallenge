@@ -9,7 +9,9 @@ interface AppContextType {
   addTask: (text: string) => void;
   assignTaskToDay: (taskId: string, dateKey: string) => boolean;
   toggleTaskComplete: (dateKey: string, taskId: string) => void;
+  removeTaskFromDay: (dateKey: string, taskId: string) => void;
   removeTaskFromPool: (taskId: string) => void;
+  updateTaskPosition: (taskId: string, position: { x: number; y: number }) => void;
   updateDayStatus: (dateKey: string, status: '😵' | '😐' | '😌') => void;
   updateHabits: (dateKey: string, habits: Partial<HabitState>) => void;
   updateReflections: (dateKey: string, reflections: Partial<DayData['reflections']>) => void;
@@ -28,6 +30,7 @@ const createEmptyDayData = (date: Date): DayData => ({
     slept: false,
     ate: false,
     trained: false,
+    water: false,
     timeRespect: false,
     noScroll: false,
   },
@@ -37,7 +40,7 @@ const createEmptyDayData = (date: Date): DayData => ({
     feelings: '',
     tomorrow: '',
   },
-  score: 5,
+  score: 0,
 });
 
 const calculateWeather = (taskCount: number): WeatherState => {
@@ -113,11 +116,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const dayData = weekData.get(dateKey);
     if (!dayData) return false;
 
-    // Check if day already has 3 tasks
-    if (dayData.tasks.length >= 3) {
-      return false;
-    }
-
     const task = taskPool.find((t: Task) => t.id === taskId);
     if (!task) return false;
 
@@ -150,8 +148,28 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  const removeTaskFromDay = (dateKey: string, taskId: string) => {
+    setWeekData((prev: Map<string, DayData>) => {
+      const newMap = new Map(prev);
+      const dayData = newMap.get(dateKey);
+      if (!dayData) return prev;
+
+      const updatedTasks = dayData.tasks.filter((task: Task) => task.id !== taskId);
+      newMap.set(dateKey, { ...dayData, tasks: updatedTasks });
+      return newMap;
+    });
+  };
+
   const removeTaskFromPool = (taskId: string) => {
     setTaskPool((prev: Task[]) => prev.filter((t: Task) => t.id !== taskId));
+  };
+
+  const updateTaskPosition = (taskId: string, position: { x: number; y: number }) => {
+    setTaskPool((prev: Task[]) => 
+      prev.map((t: Task) => 
+        t.id === taskId ? { ...t, position } : t
+      )
+    );
   };
 
   const updateDayStatus = (dateKey: string, status: '😵' | '😐' | '😌') => {
@@ -209,7 +227,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         addTask,
         assignTaskToDay,
         toggleTaskComplete,
+        removeTaskFromDay,
         removeTaskFromPool,
+        updateTaskPosition,
         updateDayStatus,
         updateHabits,
         updateReflections,

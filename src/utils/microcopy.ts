@@ -20,18 +20,19 @@ export const taskDropMessages = [
 ];
 
 export const reflectionPlaceholders = {
-  yes: "say it ugly, not pretty",
+  yes: "make hard choices",
   no: "don't overthink it",
   feelings: "three words, no pressure",
-  tomorrow: "one thing you care about",
+  tomorrow: "what to do",
 };
 
 export const habitLabels = {
-  slept: "Slept 7+ hrs",
-  ate: "Ate like I care about myself",
-  trained: "Trained or stretched",
-  timeRespect: "Time respect (wasn't late, managed schedule)",
-  noScroll: "No-scroll zone (phone control)",
+  slept: "Slept 8+ hrs",
+  ate: "Ate good got enough protein",
+  trained: "Trained with intent",
+  water: "Fill up water begin day, check where you're at now",
+  timeRespect: "Time mgmt",
+  noScroll: "No rotting don't bum (phone control)",
 };
 
 export const getRandomPhrase = (phrases: string[]): string => {

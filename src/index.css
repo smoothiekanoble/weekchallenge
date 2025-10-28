@@ -30,10 +30,43 @@ body {
   background: #64748b;
 }
 
-/* Smooth transitions */
+/* Smooth transitions - but not transform which would break dragging */
 * {
-  transition-property: color, background-color, border-color;
+  transition-property: color, background-color, border-color, opacity;
   transition-duration: 150ms;
   transition-timing-function: ease-in-out;
+}
+
+/* Disable transitions on draggable items */
+[data-dnd-kit-draggable] {
+  transition: none !important;
+}
+
+/* Floating cloud animations */
+@keyframes float {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(3px, -8px);
+  }
+  50% {
+    transform: translate(0, -5px);
+  }
+  75% {
+    transform: translate(-2px, -8px);
+  }
+}
+
+@keyframes float-alt {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  33% {
+    transform: translate(-3px, -6px);
+  }
+  66% {
+    transform: translate(2px, -9px);
+  }
 }
 

@@ -2,12 +2,14 @@ export type Task = {
   id: string;
   text: string;
   completed?: boolean;
+  position?: { x: number; y: number };
 };
 
 export type HabitState = {
   slept: boolean;
   ate: boolean;
   trained: boolean;
+  water: boolean;
   timeRespect: boolean;
   noScroll: boolean;
 };
