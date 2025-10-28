@@ -1,20 +1,13 @@
-// Get the current week (Monday - Sunday)
+// Get the current week starting from Oct 28, 2025 (Tuesday)
 const getCurrentWeekDates = (): Date[] => {
-  const today = new Date();
-  const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const challengeStart = new Date(2025, 9, 28); // Oct 28, 2025 (Tuesday)
+  challengeStart.setHours(0, 0, 0, 0);
   
-  // Calculate days until Monday (start of week)
-  const daysUntilMonday = currentDay === 0 ? -6 : 1 - currentDay;
-  
-  const monday = new Date(today);
-  monday.setDate(today.getDate() + daysUntilMonday);
-  monday.setHours(0, 0, 0, 0);
-  
-  // Generate the 7 days of the week starting from Monday
+  // Generate 7 days starting from Oct 28
   const weekDates: Date[] = [];
   for (let i = 0; i < 7; i++) {
-    const date = new Date(monday);
-    date.setDate(monday.getDate() + i);
+    const date = new Date(challengeStart);
+    date.setDate(challengeStart.getDate() + i);
     weekDates.push(date);
   }
   
@@ -22,8 +15,8 @@ const getCurrentWeekDates = (): Date[] => {
 };
 
 export const WEEK_DATES = getCurrentWeekDates();
-export const WEEK_START = WEEK_DATES[0]; // Monday
-export const WEEK_END = WEEK_DATES[6]; // Sunday
+export const WEEK_START = WEEK_DATES[0]; // Tuesday Oct 28
+export const WEEK_END = WEEK_DATES[6]; // Monday Nov 3
 
 export const formatDate = (date: Date): string => {
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
