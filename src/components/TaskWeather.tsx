@@ -320,7 +320,7 @@ export const TaskWeather = () => {
                   value={aiInputText}
                   onChange={(e) => setAIInputText(e.target.value)}
                   placeholder="I need to finish my project report, call the dentist, buy groceries, and schedule a meeting..."
-                  className="flex-1 px-3 py-2 text-sm bg-white/10 backdrop-blur-sm text-white placeholder-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-lavender border border-white/20 resize-none"
+                  className="flex-1 px-3 py-2 text-sm bg-slate-900/70 backdrop-blur-md text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-lavender border border-slate-700/50 resize-none"
                   rows={3}
                   autoFocus
                   disabled={isExtracting}

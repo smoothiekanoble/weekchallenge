@@ -54,6 +54,21 @@ npm run dev
 npm run build
 ```
 
+## Deployment
+
+### Vercel (Recommended)
+
+1. Push your code to GitHub
+2. Import your repository in [Vercel](https://vercel.com)
+3. **Set Environment Variables** in Vercel project settings:
+   - Go to your project → Settings → Environment Variables
+   - Add the following:
+     - `VITE_APP_PASSWORD` = your secure password
+     - `VITE_GROQ_API_KEY` = your Groq API key (optional)
+4. Deploy - Vercel will automatically deploy on push
+
+**Important:** Environment variables must be set in your deployment platform (Vercel, Netlify, etc.) for them to work in production. The `.env` file is only for local development.
+
 ## Design Philosophy
 
 - **Not scalable. Not a product.** This is a self-contained, aesthetic, emotionally intelligent dashboard.
