@@ -13,6 +13,7 @@ interface AppContextType {
   // Week management
   createWeek: (startDate: Date, endDate: Date) => void;
   switchWeek: (weekId: string) => void;
+  deleteWeek: (weekId: string) => void;
   getAllWeeks: () => WeekMetadata[];
   getCurrentWeekDates: () => Date[];
   
@@ -246,6 +247,30 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (weeks[weekId]) {
       setCurrentWeekId(weekId);
     }
+  };
+
+  const deleteWeek = (weekId: string) => {
+    if (!weeks[weekId]) return;
+    
+    // Don't allow deleting if it's the only week
+    if (Object.keys(weeks).length <= 1) {
+      return;
+    }
+    
+    // If deleting the current week, switch to another week first
+    if (currentWeekId === weekId) {
+      const otherWeeks = Object.keys(weeks).filter(id => id !== weekId);
+      if (otherWeeks.length > 0) {
+        setCurrentWeekId(otherWeeks[0]);
+      }
+    }
+    
+    // Remove the week
+    setWeeks(prev => {
+      const updated = { ...prev };
+      delete updated[weekId];
+      return updated;
+    });
   };
 
   const getAllWeeks = (): WeekMetadata[] => {
@@ -494,6 +519,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         currentWeekDates,
         createWeek,
         switchWeek,
+        deleteWeek,
         getAllWeeks,
         getCurrentWeekDates,
         addTask,
