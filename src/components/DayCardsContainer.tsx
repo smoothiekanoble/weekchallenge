@@ -1,15 +1,16 @@
 import { motion } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import { DayCard } from './DayCard';
-import { WEEK_DATES, getDateKey } from '../utils/dateUtils';
+import { getDateKey } from '../utils/dateUtils';
 
 export const DayCardsContainer = () => {
-  const { weekData } = useAppContext();
+  const { weekData, getCurrentWeekDates } = useAppContext();
+  const weekDates = getCurrentWeekDates();
 
   return (
     <div className="overflow-x-auto pb-3">
       <div className="flex gap-3 min-w-min px-1">
-        {WEEK_DATES.map((date) => {
+        {weekDates.map((date) => {
           const dateKey = getDateKey(date);
           const dayData = weekData.get(dateKey);
 

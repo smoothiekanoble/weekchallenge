@@ -1,5 +1,54 @@
-// Get the current week starting from Oct 28, 2025 (Tuesday)
-const getCurrentWeekDates = (): Date[] => {
+// Generate all dates between startDate and endDate (inclusive)
+export const generateWeekDates = (startDate: Date, endDate: Date): Date[] => {
+  const start = new Date(startDate);
+  start.setHours(0, 0, 0, 0);
+  
+  const end = new Date(endDate);
+  end.setHours(0, 0, 0, 0);
+  
+  const dates: Date[] = [];
+  const current = new Date(start);
+  
+  while (current <= end) {
+    dates.push(new Date(current));
+    current.setDate(current.getDate() + 1);
+  }
+  
+  return dates;
+};
+
+// Generate week ID from start and end dates
+export const getWeekId = (startDate: Date, endDate: Date): string => {
+  const start = new Date(startDate);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(endDate);
+  end.setHours(0, 0, 0, 0);
+  
+  const startStr = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
+  const endStr = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
+  return `week-${startStr}-${endStr}`;
+};
+
+// Format week range for display
+export const formatWeekRange = (startDate: Date, endDate: Date): string => {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const startMonth = months[startDate.getMonth()];
+  const endMonth = months[endDate.getMonth()];
+  const startDay = startDate.getDate();
+  const endDay = endDate.getDate();
+  const year = endDate.getFullYear();
+  
+  if (startMonth === endMonth && startDate.getFullYear() === endDate.getFullYear()) {
+    return `${startMonth} ${startDay}–${endDay}, ${year}`;
+  }
+  if (startDate.getFullYear() === endDate.getFullYear()) {
+    return `${startMonth} ${startDay} – ${endMonth} ${endDay}, ${year}`;
+  }
+  return `${startMonth} ${startDay}, ${startDate.getFullYear()} – ${endMonth} ${endDay}, ${year}`;
+};
+
+// Get default week dates for migration (Oct 28 - Nov 3, 2025)
+export const getDefaultWeekDates = (): Date[] => {
   const challengeStart = new Date(2025, 9, 28); // Oct 28, 2025 (Tuesday)
   challengeStart.setHours(0, 0, 0, 0);
   
@@ -13,10 +62,6 @@ const getCurrentWeekDates = (): Date[] => {
   
   return weekDates;
 };
-
-export const WEEK_DATES = getCurrentWeekDates();
-export const WEEK_START = WEEK_DATES[0]; // Tuesday Oct 28
-export const WEEK_END = WEEK_DATES[6]; // Monday Nov 3
 
 export const formatDate = (date: Date): string => {
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

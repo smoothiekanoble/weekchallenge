@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
-import { WEEK_DATES, formatDateShort, getDateKey } from '../utils/dateUtils';
+import { formatDateShort, getDateKey } from '../utils/dateUtils';
 
 export const WeeklySummary = () => {
-  const { weekData } = useAppContext();
+  const { weekData, getCurrentWeekDates } = useAppContext();
+  const weekDates = getCurrentWeekDates();
   const [weekReflection, setWeekReflection] = useState({
     hardest: '',
     helped: '',
@@ -26,7 +27,7 @@ export const WeeklySummary = () => {
       {/* Score Visualization */}
       <div className="mb-4">
         <div className="flex items-end justify-between gap-1.5 h-24 mb-2">
-          {WEEK_DATES.map((date) => {
+          {weekDates.map((date) => {
             const dateKey = getDateKey(date);
             const dayData = weekData.get(dateKey);
             const score = dayData?.score || 0;
@@ -47,7 +48,7 @@ export const WeeklySummary = () => {
         </div>
 
         <div className="flex justify-between text-[10px] text-gray-400">
-          {WEEK_DATES.map((date) => (
+          {weekDates.map((date) => (
             <div key={date.toISOString()} className="flex-1 text-center">
               {formatDateShort(date)}
             </div>

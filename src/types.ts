@@ -35,3 +35,18 @@ export type AuthSession = {
   expiresAt: number;
 };
 
+export type WeekData = {
+  id: string;
+  startDate: string; // ISO date string (YYYY-MM-DD)
+  endDate: string; // ISO date string (YYYY-MM-DD)
+  taskPool: Task[];
+  weekData: Record<string, DayData>; // Map of dateKey -> DayData
+};
+
+export type WeekMetadata = {
+  id: string;
+  startDate: string;
+  endDate: string;
+  label: string; // Formatted display string
+};
+

@@ -1,17 +1,30 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Task, DayData, WeatherState, HabitState } from '../types';
-import { WEEK_DATES, getDateKey } from '../utils/dateUtils';
+import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
+import { Task, DayData, WeatherState, HabitState, WeekData, WeekMetadata } from '../types';
+import { generateWeekDates, getDateKey, getWeekId, getDefaultWeekDates, formatWeekRange } from '../utils/dateUtils';
 
 interface AppContextType {
+  // Current week data (computed from weeks map)
   taskPool: Task[];
   weekData: Map<string, DayData>;
   weather: WeatherState;
+  currentWeekId: string | null;
+  currentWeekDates: Date[];
+  
+  // Week management
+  createWeek: (startDate: Date, endDate: Date) => void;
+  switchWeek: (weekId: string) => void;
+  getAllWeeks: () => WeekMetadata[];
+  getCurrentWeekDates: () => Date[];
+  
+  // Task operations (operate on current week)
   addTask: (text: string) => void;
   assignTaskToDay: (taskId: string, dateKey: string) => boolean;
   toggleTaskComplete: (dateKey: string, taskId: string) => void;
   removeTaskFromDay: (dateKey: string, taskId: string) => void;
   removeTaskFromPool: (taskId: string) => void;
   updateTaskPosition: (taskId: string, position: { x: number; y: number }) => void;
+  
+  // Day operations (operate on current week)
   updateDayStatus: (dateKey: string, status: '😵' | '😐' | '😌') => void;
   updateHabits: (dateKey: string, habits: Partial<HabitState>) => void;
   updateReflections: (dateKey: string, reflections: Partial<DayData['reflections']>) => void;
@@ -50,9 +63,36 @@ const calculateWeather = (taskCount: number): WeatherState => {
   return 'sunny';
 };
 
+// Migrate old localStorage format to new format
+const migrateOldData = (oldData: any): { weeks: Record<string, WeekData>, currentWeekId: string } => {
+  const defaultDates = getDefaultWeekDates();
+  const startDate = defaultDates[0];
+  const endDate = defaultDates[defaultDates.length - 1];
+  const weekId = getWeekId(startDate, endDate);
+  
+  const weekDataObj: Record<string, DayData> = {};
+  defaultDates.forEach(date => {
+    const key = getDateKey(date);
+    weekDataObj[key] = oldData.weekData?.[key] || createEmptyDayData(date);
+  });
+  
+  const weekData: WeekData = {
+    id: weekId,
+    startDate: `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`,
+    endDate: `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`,
+    taskPool: oldData.taskPool || [],
+    weekData: weekDataObj,
+  };
+  
+  return {
+    weeks: { [weekId]: weekData },
+    currentWeekId: weekId,
+  };
+};
+
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [taskPool, setTaskPool] = useState<Task[]>([]);
-  const [weekData, setWeekData] = useState<Map<string, DayData>>(new Map());
+  const [weeks, setWeeks] = useState<Record<string, WeekData>>({});
+  const [currentWeekId, setCurrentWeekId] = useState<string | null>(null);
   const [weather, setWeather] = useState<WeatherState>('stormy');
 
   // Initialize data
@@ -61,160 +101,386 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        setTaskPool(parsed.taskPool || []);
         
-        const dataMap = new Map<string, DayData>();
-        WEEK_DATES.forEach(date => {
-          const key = getDateKey(date);
-          dataMap.set(key, parsed.weekData?.[key] || createEmptyDayData(date));
-        });
-        setWeekData(dataMap);
+        // Check if it's the new format
+        if (parsed.weeks && parsed.currentWeekId) {
+          setWeeks(parsed.weeks);
+          setCurrentWeekId(parsed.currentWeekId);
+        } else {
+          // Migrate old format
+          const migrated = migrateOldData(parsed);
+          setWeeks(migrated.weeks);
+          setCurrentWeekId(migrated.currentWeekId);
+        }
       } catch (error) {
-        initializeWeekData();
+        // Initialize with default week
+        const defaultDates = getDefaultWeekDates();
+        const startDate = defaultDates[0];
+        const endDate = defaultDates[defaultDates.length - 1];
+        const weekId = getWeekId(startDate, endDate);
+        
+        const weekDataObj: Record<string, DayData> = {};
+        defaultDates.forEach(date => {
+          weekDataObj[getDateKey(date)] = createEmptyDayData(date);
+        });
+        
+        const defaultWeek: WeekData = {
+          id: weekId,
+          startDate: `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`,
+          endDate: `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`,
+          taskPool: [],
+          weekData: weekDataObj,
+        };
+        
+        setWeeks({ [weekId]: defaultWeek });
+        setCurrentWeekId(weekId);
       }
     } else {
-      initializeWeekData();
+      // No data - create default week
+      const defaultDates = getDefaultWeekDates();
+      const startDate = defaultDates[0];
+      const endDate = defaultDates[defaultDates.length - 1];
+      const weekId = getWeekId(startDate, endDate);
+      
+      const weekDataObj: Record<string, DayData> = {};
+      defaultDates.forEach(date => {
+        weekDataObj[getDateKey(date)] = createEmptyDayData(date);
+      });
+      
+      const defaultWeek: WeekData = {
+        id: weekId,
+        startDate: `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`,
+        endDate: `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`,
+        taskPool: [],
+        weekData: weekDataObj,
+      };
+      
+      setWeeks({ [weekId]: defaultWeek });
+      setCurrentWeekId(weekId);
     }
   }, []);
 
-  const initializeWeekData = () => {
-    const dataMap = new Map<string, DayData>();
-    WEEK_DATES.forEach(date => {
-      dataMap.set(getDateKey(date), createEmptyDayData(date));
-    });
-    setWeekData(dataMap);
-  };
+  // Get current week data
+  const currentWeek = useMemo(() => {
+    if (!currentWeekId || !weeks[currentWeekId]) return null;
+    return weeks[currentWeekId];
+  }, [currentWeekId, weeks]);
+
+  // Compute current week dates
+  const currentWeekDates = useMemo(() => {
+    if (!currentWeek) return [];
+    const startDate = new Date(currentWeek.startDate);
+    const endDate = new Date(currentWeek.endDate);
+    return generateWeekDates(startDate, endDate);
+  }, [currentWeek]);
+
+  // Compute taskPool and weekData from current week
+  const taskPool = useMemo(() => currentWeek?.taskPool || [], [currentWeek]);
+  const weekData = useMemo(() => {
+    const map = new Map<string, DayData>();
+    if (currentWeek) {
+      Object.entries(currentWeek.weekData).forEach(([key, value]) => {
+        map.set(key, value);
+      });
+    }
+    return map;
+  }, [currentWeek]);
 
   // Save to localStorage whenever data changes
   useEffect(() => {
-    const weekDataObj: Record<string, DayData> = {};
-    weekData.forEach((value: DayData, key: string) => {
-      weekDataObj[key] = value;
-    });
-
+    if (Object.keys(weeks).length === 0 || !currentWeekId) return;
+    
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
-        taskPool,
-        weekData: weekDataObj,
+        weeks,
+        currentWeekId,
       })
     );
 
-    setWeather(calculateWeather(taskPool.length));
-  }, [taskPool, weekData]);
+    if (currentWeek) {
+      setWeather(calculateWeather(currentWeek.taskPool.length));
+    }
+  }, [weeks, currentWeekId, currentWeek]);
 
+  // Week management functions
+  const createWeek = (startDate: Date, endDate: Date) => {
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(0, 0, 0, 0);
+    
+    if (end < start) {
+      throw new Error('End date must be after start date');
+    }
+    
+    const weekId = getWeekId(start, end);
+    
+    // Check if week already exists
+    if (weeks[weekId]) {
+      // Switch to existing week instead
+      setCurrentWeekId(weekId);
+      return;
+    }
+    
+    // Create new week
+    const dates = generateWeekDates(start, end);
+    const weekDataObj: Record<string, DayData> = {};
+    dates.forEach(date => {
+      weekDataObj[getDateKey(date)] = createEmptyDayData(date);
+    });
+    
+    const newWeek: WeekData = {
+      id: weekId,
+      startDate: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`,
+      endDate: `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`,
+      taskPool: [],
+      weekData: weekDataObj,
+    };
+    
+    setWeeks(prev => ({ ...prev, [weekId]: newWeek }));
+    setCurrentWeekId(weekId);
+  };
+
+  const switchWeek = (weekId: string) => {
+    if (weeks[weekId]) {
+      setCurrentWeekId(weekId);
+    }
+  };
+
+  const getAllWeeks = (): WeekMetadata[] => {
+    return Object.values(weeks)
+      .map(week => {
+        const startDate = new Date(week.startDate);
+        const endDate = new Date(week.endDate);
+        return {
+          id: week.id,
+          startDate: week.startDate,
+          endDate: week.endDate,
+          label: formatWeekRange(startDate, endDate),
+        };
+      })
+      .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+  };
+
+  const getCurrentWeekDates = (): Date[] => {
+    return currentWeekDates;
+  };
+
+  // Task operations (operate on current week)
   const addTask = (text: string) => {
+    if (!currentWeekId || !currentWeek) return;
+    
     const newTask: Task = {
       id: `task-${Date.now()}-${Math.random()}`,
       text,
       completed: false,
     };
-    setTaskPool((prev: Task[]) => [...prev, newTask]);
+    
+    setWeeks(prev => ({
+      ...prev,
+      [currentWeekId]: {
+        ...prev[currentWeekId],
+        taskPool: [...prev[currentWeekId].taskPool, newTask],
+      },
+    }));
   };
 
   const assignTaskToDay = (taskId: string, dateKey: string): boolean => {
-    const dayData = weekData.get(dateKey);
+    if (!currentWeekId || !currentWeek) return false;
+    
+    const dayData = currentWeek.weekData[dateKey];
     if (!dayData) return false;
 
-    const task = taskPool.find((t: Task) => t.id === taskId);
+    const task = currentWeek.taskPool.find((t: Task) => t.id === taskId);
     if (!task) return false;
 
-    // Remove from pool
-    setTaskPool((prev: Task[]) => prev.filter((t: Task) => t.id !== taskId));
-
-    // Add to day
-    setWeekData((prev: Map<string, DayData>) => {
-      const newMap = new Map(prev);
-      const updated = { ...dayData, tasks: [...dayData.tasks, task] };
-      newMap.set(dateKey, updated);
-      return newMap;
+    // Remove from pool and add to day
+    setWeeks(prev => {
+      const week = prev[currentWeekId];
+      const updatedWeekData = { ...week.weekData };
+      updatedWeekData[dateKey] = {
+        ...dayData,
+        tasks: [...dayData.tasks, task],
+      };
+      
+      return {
+        ...prev,
+        [currentWeekId]: {
+          ...week,
+          taskPool: week.taskPool.filter((t: Task) => t.id !== taskId),
+          weekData: updatedWeekData,
+        },
+      };
     });
 
     return true;
   };
 
   const toggleTaskComplete = (dateKey: string, taskId: string) => {
-    setWeekData((prev: Map<string, DayData>) => {
-      const newMap = new Map(prev);
-      const dayData = newMap.get(dateKey);
-      if (!dayData) return prev;
+    if (!currentWeekId || !currentWeek) return;
+    
+    const dayData = currentWeek.weekData[dateKey];
+    if (!dayData) return;
 
-      const updatedTasks = dayData.tasks.map((task: Task) =>
-        task.id === taskId ? { ...task, completed: !task.completed } : task
-      );
-
-      newMap.set(dateKey, { ...dayData, tasks: updatedTasks });
-      return newMap;
+    setWeeks(prev => {
+      const week = prev[currentWeekId];
+      const updatedWeekData = { ...week.weekData };
+      updatedWeekData[dateKey] = {
+        ...dayData,
+        tasks: dayData.tasks.map((task: Task) =>
+          task.id === taskId ? { ...task, completed: !task.completed } : task
+        ),
+      };
+      
+      return {
+        ...prev,
+        [currentWeekId]: {
+          ...week,
+          weekData: updatedWeekData,
+        },
+      };
     });
   };
 
   const removeTaskFromDay = (dateKey: string, taskId: string) => {
-    setWeekData((prev: Map<string, DayData>) => {
-      const newMap = new Map(prev);
-      const dayData = newMap.get(dateKey);
-      if (!dayData) return prev;
+    if (!currentWeekId || !currentWeek) return;
+    
+    const dayData = currentWeek.weekData[dateKey];
+    if (!dayData) return;
 
-      const updatedTasks = dayData.tasks.filter((task: Task) => task.id !== taskId);
-      newMap.set(dateKey, { ...dayData, tasks: updatedTasks });
-      return newMap;
+    setWeeks(prev => {
+      const week = prev[currentWeekId];
+      const updatedWeekData = { ...week.weekData };
+      updatedWeekData[dateKey] = {
+        ...dayData,
+        tasks: dayData.tasks.filter((task: Task) => task.id !== taskId),
+      };
+      
+      return {
+        ...prev,
+        [currentWeekId]: {
+          ...week,
+          weekData: updatedWeekData,
+        },
+      };
     });
   };
 
   const removeTaskFromPool = (taskId: string) => {
-    setTaskPool((prev: Task[]) => prev.filter((t: Task) => t.id !== taskId));
+    if (!currentWeekId || !currentWeek) return;
+    
+    setWeeks(prev => ({
+      ...prev,
+      [currentWeekId]: {
+        ...prev[currentWeekId],
+        taskPool: prev[currentWeekId].taskPool.filter((t: Task) => t.id !== taskId),
+      },
+    }));
   };
 
   const updateTaskPosition = (taskId: string, position: { x: number; y: number }) => {
-    setTaskPool((prev: Task[]) => 
-      prev.map((t: Task) => 
-        t.id === taskId ? { ...t, position } : t
-      )
-    );
+    if (!currentWeekId || !currentWeek) return;
+    
+    setWeeks(prev => ({
+      ...prev,
+      [currentWeekId]: {
+        ...prev[currentWeekId],
+        taskPool: prev[currentWeekId].taskPool.map((t: Task) =>
+          t.id === taskId ? { ...t, position } : t
+        ),
+      },
+    }));
   };
 
+  // Day operations (operate on current week)
   const updateDayStatus = (dateKey: string, status: '😵' | '😐' | '😌') => {
-    setWeekData((prev: Map<string, DayData>) => {
-      const newMap = new Map(prev);
-      const dayData = newMap.get(dateKey);
-      if (!dayData) return prev;
-      newMap.set(dateKey, { ...dayData, status });
-      return newMap;
+    if (!currentWeekId || !currentWeek) return;
+    
+    const dayData = currentWeek.weekData[dateKey];
+    if (!dayData) return;
+
+    setWeeks(prev => {
+      const week = prev[currentWeekId];
+      const updatedWeekData = { ...week.weekData };
+      updatedWeekData[dateKey] = { ...dayData, status };
+      
+      return {
+        ...prev,
+        [currentWeekId]: {
+          ...week,
+          weekData: updatedWeekData,
+        },
+      };
     });
   };
 
   const updateHabits = (dateKey: string, habits: Partial<HabitState>) => {
-    setWeekData((prev: Map<string, DayData>) => {
-      const newMap = new Map(prev);
-      const dayData = newMap.get(dateKey);
-      if (!dayData) return prev;
-      newMap.set(dateKey, {
+    if (!currentWeekId || !currentWeek) return;
+    
+    const dayData = currentWeek.weekData[dateKey];
+    if (!dayData) return;
+
+    setWeeks(prev => {
+      const week = prev[currentWeekId];
+      const updatedWeekData = { ...week.weekData };
+      updatedWeekData[dateKey] = {
         ...dayData,
         habits: { ...dayData.habits, ...habits } as HabitState,
-      });
-      return newMap;
+      };
+      
+      return {
+        ...prev,
+        [currentWeekId]: {
+          ...week,
+          weekData: updatedWeekData,
+        },
+      };
     });
   };
 
   const updateReflections = (dateKey: string, reflections: Partial<DayData['reflections']>) => {
-    setWeekData((prev: Map<string, DayData>) => {
-      const newMap = new Map(prev);
-      const dayData = newMap.get(dateKey);
-      if (!dayData) return prev;
-      newMap.set(dateKey, {
+    if (!currentWeekId || !currentWeek) return;
+    
+    const dayData = currentWeek.weekData[dateKey];
+    if (!dayData) return;
+
+    setWeeks(prev => {
+      const week = prev[currentWeekId];
+      const updatedWeekData = { ...week.weekData };
+      updatedWeekData[dateKey] = {
         ...dayData,
         reflections: { ...dayData.reflections, ...reflections } as DayData['reflections'],
-      });
-      return newMap;
+      };
+      
+      return {
+        ...prev,
+        [currentWeekId]: {
+          ...week,
+          weekData: updatedWeekData,
+        },
+      };
     });
   };
 
   const updateScore = (dateKey: string, score: number) => {
-    setWeekData((prev: Map<string, DayData>) => {
-      const newMap = new Map(prev);
-      const dayData = newMap.get(dateKey);
-      if (!dayData) return prev;
-      newMap.set(dateKey, { ...dayData, score });
-      return newMap;
+    if (!currentWeekId || !currentWeek) return;
+    
+    const dayData = currentWeek.weekData[dateKey];
+    if (!dayData) return;
+
+    setWeeks(prev => {
+      const week = prev[currentWeekId];
+      const updatedWeekData = { ...week.weekData };
+      updatedWeekData[dateKey] = { ...dayData, score };
+      
+      return {
+        ...prev,
+        [currentWeekId]: {
+          ...week,
+          weekData: updatedWeekData,
+        },
+      };
     });
   };
 
@@ -224,6 +490,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         taskPool,
         weekData,
         weather,
+        currentWeekId,
+        currentWeekDates,
+        createWeek,
+        switchWeek,
+        getAllWeeks,
+        getCurrentWeekDates,
         addTask,
         assignTaskToDay,
         toggleTaskComplete,
@@ -248,4 +520,3 @@ export const useAppContext = () => {
   }
   return context;
 };
-
