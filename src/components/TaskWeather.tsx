@@ -370,7 +370,7 @@ export const TaskWeather = () => {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-4 p-3 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10"
+            className="mb-4 p-3 bg-slate-900/70 backdrop-blur-md rounded-lg border border-slate-700/50 shadow-lg"
           >
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-semibold text-white">
@@ -391,29 +391,31 @@ export const TaskWeather = () => {
                 </button>
               </div>
             </div>
-            <div className="space-y-1.5 max-h-[120px] overflow-y-auto">
+            <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-1">
               {extractedTasks.map((task, index) => (
                 <div
                   key={index}
-                  className={`flex items-center gap-2 p-2 rounded bg-white/5 hover:bg-white/10 transition-colors ${
-                    selectedTasks.has(index) ? 'ring-1 ring-accent-mint' : ''
+                  className={`flex items-center gap-2 p-2 rounded bg-slate-800/60 hover:bg-slate-800/80 transition-colors border ${
+                    selectedTasks.has(index) 
+                      ? 'ring-1 ring-accent-mint border-accent-mint/30' 
+                      : 'border-slate-700/30'
                   }`}
                 >
                   <input
                     type="checkbox"
                     checked={selectedTasks.has(index)}
                     onChange={() => toggleTaskSelection(index)}
-                    className="w-3.5 h-3.5 accent-accent-mint cursor-pointer"
+                    className="w-3.5 h-3.5 accent-accent-mint cursor-pointer flex-shrink-0"
                   />
                   <input
                     type="text"
                     value={task}
                     onChange={(e) => updateExtractedTask(index, e.target.value)}
-                    className="flex-1 px-2 py-1 text-xs bg-white/5 text-white rounded border border-white/10 focus:outline-none focus:ring-1 focus:ring-accent-lavender"
+                    className="flex-1 px-2 py-1 text-xs bg-slate-900/70 text-white rounded border border-slate-600/50 focus:outline-none focus:ring-1 focus:ring-accent-lavender focus:border-accent-lavender/50 placeholder-gray-500"
                   />
                   <button
                     onClick={() => removeExtractedTask(index)}
-                    className="p-1 text-gray-400 hover:text-red-300 transition-colors"
+                    className="p-1 text-gray-400 hover:text-red-300 transition-colors flex-shrink-0"
                   >
                     <X className="w-3 h-3" />
                   </button>
