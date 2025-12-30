@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, Cloud, CloudRain, Sun } from 'lucide-react';
+import { Plus, Cloud, CloudRain, Sun, Sparkles, X, Loader2 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { Task } from '../types';
+import { useTaskExtraction } from '../hooks/useTaskExtraction';
 
 const DraggableTask = ({ task, index }: { task: Task; index: number }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -105,6 +106,19 @@ export const TaskWeather = () => {
   const [showInput, setShowInput] = useState(false);
   const [showBulkInput, setShowBulkInput] = useState(false);
   const [bulkTaskText, setBulkTaskText] = useState('');
+  const [showAIInput, setShowAIInput] = useState(false);
+  const [aiInputText, setAIInputText] = useState('');
+  const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());
+  
+  const {
+    isLoading: isExtracting,
+    error: extractionError,
+    extractedTasks,
+    extractTasksFromText,
+    clearExtractedTasks,
+    removeTask: removeExtractedTask,
+    updateTask: updateExtractedTask,
+  } = useTaskExtraction();
 
   const handleAddTask = (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,6 +144,62 @@ export const TaskWeather = () => {
       setShowBulkInput(false);
     }
   };
+
+  const handleAIExtract = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (aiInputText.trim()) {
+      clearExtractedTasks();
+      setSelectedTasks(new Set());
+      await extractTasksFromText(aiInputText);
+    }
+  };
+
+  const handleAddExtractedTasks = () => {
+    if (selectedTasks.size === 0) {
+      // If nothing selected, add all
+      extractedTasks.forEach(task => addTask(task));
+    } else {
+      // Add only selected tasks
+      extractedTasks.forEach((task, index) => {
+        if (selectedTasks.has(index)) {
+          addTask(task);
+        }
+      });
+    }
+    // Reset
+    clearExtractedTasks();
+    setAIInputText('');
+    setShowAIInput(false);
+    setSelectedTasks(new Set());
+  };
+
+  const toggleTaskSelection = (index: number) => {
+    setSelectedTasks(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedTasks.size === extractedTasks.length) {
+      setSelectedTasks(new Set());
+    } else {
+      setSelectedTasks(new Set(extractedTasks.map((_, i) => i)));
+    }
+  };
+
+  // Initialize all tasks as selected when extraction completes
+  useEffect(() => {
+    if (extractedTasks.length > 0 && selectedTasks.size === 0) {
+      setSelectedTasks(new Set(extractedTasks.map((_, i) => i)));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [extractedTasks.length]);
 
   const weatherStyles = {
     stormy: 'from-weather-stormy-start to-weather-stormy-end',
@@ -179,7 +249,7 @@ export const TaskWeather = () => {
             </p>
           </div>
 
-          {!showInput && !showBulkInput ? (
+          {!showInput && !showBulkInput && !showAIInput ? (
             <div className="flex gap-2">
               <button
                 onClick={() => setShowInput(true)}
@@ -194,6 +264,13 @@ export const TaskWeather = () => {
               >
                 <Plus className="w-3.5 h-3.5" />
                 Bulk Add
+              </button>
+              <button
+                onClick={() => setShowAIInput(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-accent-lavender/20 hover:bg-accent-lavender/30 text-white rounded-lg transition-colors border border-accent-lavender/30"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                AI Extract
               </button>
             </div>
           ) : showInput ? (
@@ -216,7 +293,7 @@ export const TaskWeather = () => {
                 Add
               </button>
             </form>
-          ) : (
+          ) : showBulkInput ? (
             <form onSubmit={handleBulkAdd} className="flex gap-2">
               <input
                 type="text"
@@ -236,8 +313,115 @@ export const TaskWeather = () => {
                 Add All
               </button>
             </form>
+          ) : (
+            <form onSubmit={handleAIExtract} className="flex flex-col gap-2 w-full">
+              <div className="flex gap-2">
+                <textarea
+                  value={aiInputText}
+                  onChange={(e) => setAIInputText(e.target.value)}
+                  placeholder="I need to finish my project report, call the dentist, buy groceries, and schedule a meeting..."
+                  className="flex-1 px-3 py-2 text-sm bg-white/10 backdrop-blur-sm text-white placeholder-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-lavender border border-white/20 resize-none"
+                  rows={3}
+                  autoFocus
+                  disabled={isExtracting}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAIInput(false);
+                    setAIInputText('');
+                    clearExtractedTasks();
+                    setSelectedTasks(new Set());
+                  }}
+                  className="px-2 py-1 text-gray-400 hover:text-white transition-colors"
+                  disabled={isExtracting}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="flex gap-2 items-center">
+                <button
+                  type="submit"
+                  disabled={isExtracting || !aiInputText.trim()}
+                  className="px-3 py-1.5 text-sm bg-accent-lavender hover:bg-purple-400 text-slate-900 font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                >
+                  {isExtracting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Extracting...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Extract Tasks
+                    </>
+                  )}
+                </button>
+                {extractionError && (
+                  <span className="text-xs text-red-300">{extractionError}</span>
+                )}
+              </div>
+            </form>
           )}
         </div>
+
+        {/* Extracted Tasks Preview */}
+        {extractedTasks.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-3 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-semibold text-white">
+                Extracted Tasks ({selectedTasks.size || extractedTasks.length} selected)
+              </h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSelectAll}
+                  className="text-xs text-gray-300 hover:text-white transition-colors"
+                >
+                  {selectedTasks.size === extractedTasks.length ? 'Deselect All' : 'Select All'}
+                </button>
+                <button
+                  onClick={handleAddExtractedTasks}
+                  className="px-2 py-1 text-xs bg-accent-mint text-slate-900 font-semibold rounded hover:bg-green-300 transition-colors"
+                >
+                  Add {selectedTasks.size === 0 ? 'All' : 'Selected'}
+                </button>
+              </div>
+            </div>
+            <div className="space-y-1.5 max-h-[120px] overflow-y-auto">
+              {extractedTasks.map((task, index) => (
+                <div
+                  key={index}
+                  className={`flex items-center gap-2 p-2 rounded bg-white/5 hover:bg-white/10 transition-colors ${
+                    selectedTasks.has(index) ? 'ring-1 ring-accent-mint' : ''
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedTasks.has(index)}
+                    onChange={() => toggleTaskSelection(index)}
+                    className="w-3.5 h-3.5 accent-accent-mint cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={task}
+                    onChange={(e) => updateExtractedTask(index, e.target.value)}
+                    className="flex-1 px-2 py-1 text-xs bg-white/5 text-white rounded border border-white/10 focus:outline-none focus:ring-1 focus:ring-accent-lavender"
+                  />
+                  <button
+                    onClick={() => removeExtractedTask(index)}
+                    className="p-1 text-gray-400 hover:text-red-300 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
 
         {/* Task Pool */}
         <div className="relative min-h-[150px] w-full">
@@ -246,7 +430,7 @@ export const TaskWeather = () => {
           ))}
         </div>
 
-        {taskPool.length === 0 && (
+        {taskPool.length === 0 && extractedTasks.length === 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

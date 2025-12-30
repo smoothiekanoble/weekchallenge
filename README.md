@@ -9,10 +9,12 @@ A single-user, one-week dashboard for rebuilding self-trust and tracking alignme
 - 🌦️ **Task Weather System**: Visual metaphor showing mental clarity as tasks are completed
 - 📅 **Daily Cards**: Track tasks, habits, reflections, and alignment scores for each day
 - 🎯 **Drag & Drop**: Assign tasks from the cloud pool to specific days
+- 🤖 **AI Task Extraction**: Use natural language to automatically break down tasks (free LLM integration)
 - ✅ **Habit Tracking**: 5 key habits to build consistency
 - 📝 **Daily Reflections**: Prompts for self-awareness and boundary-setting
 - 📊 **Weekly Summary**: Visual score chart and end-of-week reflection
 - 🔐 **Simple Auth**: Password protection for privacy
+- 📆 **Dynamic Weeks**: Create and manage multiple weeks with custom date ranges
 
 ## Tech Stack
 
@@ -30,10 +32,17 @@ A single-user, one-week dashboard for rebuilding self-trust and tracking alignme
 npm install
 ```
 
-2. Set your password in `.env`:
+2. Create a `.env` file in the root directory with your configuration:
 ```bash
+# Required: App password for authentication
 VITE_APP_PASSWORD=your_secure_password
+
+# Optional: Groq API key for AI task extraction
+# Get a free API key at https://console.groq.com (14,400 requests/day free tier)
+VITE_GROQ_API_KEY=your_groq_api_key_here
 ```
+
+**Note:** The AI task extraction feature is optional. If you don't set `VITE_GROQ_API_KEY`, you can still use manual task entry and bulk add.
 
 3. Start the dev server:
 ```bash
